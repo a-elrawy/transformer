@@ -17,13 +17,7 @@ pip install -r requirements.txt
 
 To run the project, follow these steps:
 
-1. Get dataloaders: Use the `get_shakespeare_dataloader` 
-```python
-from data import get_shakespeare_dataloader
-train, val, test = get_shakespeare_dataloader(batch_size=16, max_seq_len=32)
-```
-
-2. Initialize model: Initialize a model with the desired hyperparameters
+1. Initialize model: Initialize a model with the desired hyperparameters
 ```python
 from transformers import GPT2Tokenizer
 from text_prediction import GPT
@@ -31,6 +25,15 @@ tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 gpt = GPT(vocab_size=tokenizer.vocab_size, d_model=512, nhead=8, num_encoding_layers=0, 
           num_decoding_layers=6, dim_feedforward=2048, dropout=0.1)
 ```
+
+2. Get dataloaders: Use the `get_shakespeare_dataloader` 
+```python
+from data import get_shakespeare_dataloader
+train, val, test = get_shakespeare_dataloader(batch_size=16, max_seq_len=32,
+                                              tokenizer=tokenizer)
+```
+
+
 
 3. Initialize text predictor: Initialize a `TextPredictor` object with the model and a tokenizer.
 ```python

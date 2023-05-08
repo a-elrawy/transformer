@@ -14,13 +14,15 @@ dropout = 0.1
 batch_size = 2
 epochs = 10
 
-# 1. Get dataloaders
-train_dataloader, val_dataloader, test_dataloader = get_shakespeare_dataloader(batch_size=2, max_seq_len=max_seq_len)
-
-# 2. Initialize model
+# 1. Initialize model
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 gpt = GPT(vocab_size=tokenizer.vocab_size, d_model=d_model, nhead=nhead, num_encoding_layers=num_encoding_layers,
           num_decoding_layers=num_encoding_layers, dim_feedforward=dim_feedforward, dropout=dropout)
+
+# 2. Get dataloaders
+train_dataloader, val_dataloader, test_dataloader = get_shakespeare_dataloader(batch_size=2, max_seq_len=max_seq_len,
+                                                                               tokenizer=tokenizer)
+
 
 # 3. Initialize text predictor
 text_predictor = TextPredictor(gpt, tokenizer)
