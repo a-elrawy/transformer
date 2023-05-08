@@ -6,7 +6,7 @@ from model import Transformer
 
 class GPT(nn.Module):
     """GPT model"""
-    def __init__(self, vocab_size, d_model=512, nhead=8, num_encoding_layers=6, num_decoding_layers=6,
+    def __init__(self, vocab_size, d_model=512, nhead=8, num_encoding_layers=0, num_decoding_layers=6,
                  dim_feedforward=2048, dropout=0.1):
         """
         :param vocab_size:
@@ -50,17 +50,18 @@ def calculate_loss(outputs, targets):
 
 class TextPredictor:
     """Text predictor"""
-    def __init__(self, model, tokenizer, device=None):
+    def __init__(self, model, tokenizer, device=None, lr=1e-4):
         """
         :param model:
         :param tokenizer:
         :param device:
+        :param lr:
         """
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = model
         self.tokenizer = tokenizer
         self.model.to(self.device)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
     def evaluate(self, dataloader):
         total_loss = 0

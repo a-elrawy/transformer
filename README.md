@@ -59,3 +59,33 @@ context = 'ROMEO:'
 generated_text = text_predictor.generate(context, max_length=100)
 print(generated_text)
 ```
+
+## CLI
+
+The project can also be run from the command line. To train a model, run the following command:
+```bash
+python main.py --batch_size 16 --max_seq_len 32 --epochs 10 --lr 0.0001 --num_encoding_layers 0 --num_decoding_layers 6 --dim_feedforward 2048 --dropout 0.1
+```
+
+To generate text, run the following command:
+```bash
+python main.py --generate --context 'ROMEO:' --max_length 100
+```
+
+### Arguments
+- `--nhead`: Number of attention heads in the model.
+- `--d_model`: Dimension of the embedding vector in the model.
+- `--num_encoding_layers`: Number of encoding layers in the model.
+- `--num_decoding_layers`: Number of decoding layers in the model.
+- `--dim_feedforward`: Dimension of the feedforward network in the model.
+
+- `--max_seq_len`: Maximum sequence length for training and evaluation.
+- `--train`: Flag to train model.
+- `--batch_size`: Batch size for training and evaluation.
+- `--lr`: Learning rate for training.
+- `--epochs`: Number of epochs to train for.
+- `--dropout`: Dropout probability for the model.
+- `--generate`: Flag to generate text.
+- `--context`: Context for text generation.
+- `--max_length`: Maximum length of generated text.
+- `--use_wandb`: Flag to use wandb for logging.
