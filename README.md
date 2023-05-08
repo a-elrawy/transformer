@@ -2,6 +2,17 @@
 
 This project demonstrates how to train a text predictor using a transformer-based model on Shakespeare's plays. The goal of the project is to generate realistic text given an input context.
 
+## Requirements
+- Python 3.8
+- [PyTorch](https://pytorch.org/) 2.0.0
+- [Transformers](https://huggingface.co/transformers/) 4.28.1 
+
+Install the required packages using the following command:
+```bash
+pip install -r requirements.txt
+```
+
+
 ## Usage
 
 To run the project, follow these steps:
