@@ -2,17 +2,21 @@ from data import get_shakespeare_dataloader
 from text_prediction import TextPredictor, GPT
 from transformers import GPT2Tokenizer
 
-
 # Model Training
 max_seq_len = 32
-d_model = 256
+d_model = 512
 nhead = 2
-num_encoding_layers = 2
-num_decoding_layers = 2
-dim_feedforward = 64
+num_encoding_layers = 0
+num_decoding_layers = 6
+dim_feedforward = 2048
 dropout = 0.1
-batch_size = 2
+batch_size = 32
 epochs = 10
+use_wandb = False
+
+if use_wandb:
+    import wandb
+    wandb.init(project='text-prediction')
 
 # 1. Initialize model
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
@@ -29,7 +33,7 @@ text_predictor = TextPredictor(gpt, tokenizer)
 print(sum(p.numel() for p in text_predictor.model.parameters())/1e6, 'M parameters')
 
 # 4. Train model
-text_predictor.train(train_dataloader, val_dataloader, epochs=10)
+text_predictor.train(train_dataloader, val_dataloader, epochs=10, use_wandb=use_wandb)
 
 # 5. Evaluate model
 test_loss = text_predictor.evaluate(test_dataloader)

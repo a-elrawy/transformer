@@ -75,7 +75,7 @@ class TextPredictor:
                 total_loss += loss.item()
         return total_loss / len(dataloader)
 
-    def train(self, train_dataloader, val_dataloader, epochs=10):
+    def train(self, train_dataloader, val_dataloader, epochs=10, use_wandb=False):
         for i in range(epochs):
             total_loss = 0
             for src in train_dataloader:
@@ -93,6 +93,9 @@ class TextPredictor:
             train_loss = total_loss / len(train_dataloader)
             val_loss = self.evaluate(val_dataloader)
             print(f"Epoch: {i+1}, Train loss: {train_loss}, Val loss: {val_loss}")
+            if use_wandb:
+                import wandb
+                wandb.log({"train_loss": train_loss, "val_loss": val_loss})
 
     def generate(self, context, max_len=100, max_seq_len=32):
         """Generate text given context

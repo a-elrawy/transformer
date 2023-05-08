@@ -6,6 +6,7 @@ This project demonstrates how to train a text predictor using a transformer-base
 - Python 3.8
 - [PyTorch](https://pytorch.org/) 2.0.0
 - [Transformers](https://huggingface.co/transformers/) 4.28.1 
+- [WandB](https://wandb.ai/) 0.15.2
 
 Install the required packages using the following command:
 ```bash
