@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torchmetrics.functional import accuracy, f1_score, precision, recall, perplexity, bleu_score
 
 from model import Transformer
 
@@ -50,6 +51,7 @@ def calculate_loss(outputs, targets):
 
 class TextPredictor:
     """Text predictor"""
+
     def __init__(self, model, tokenizer, device=None, lr=1e-4):
         """
         :param model:
@@ -64,7 +66,7 @@ class TextPredictor:
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
     def evaluate(self, dataloader):
-        total_loss = 0
+        total_loss, total_metrics = 0, {}
         with torch.no_grad():
             for src in dataloader:
                 src = src[:, :-1].to(self.device)
@@ -73,12 +75,22 @@ class TextPredictor:
                 output = self.model(src, tgt)
                 loss = calculate_loss(output, tgt)
 
+                # Calculate metrics
+                metrics = self.metrics(output, tgt)
+                for k, v in metrics.items():
+                    total_metrics[k] = total_metrics.get(k, 0) + v
+
                 total_loss += loss.item()
-        return total_loss / len(dataloader)
+
+        for k, v in total_metrics.items():
+            total_metrics[k] = v / len(dataloader)
+
+        total_loss = total_loss / len(dataloader)
+        return total_loss, total_metrics
 
     def train(self, train_dataloader, val_dataloader, epochs=10, use_wandb=False):
         for i in range(epochs):
-            total_loss = 0
+            total_loss, total_metrics = 0, {}
             for src in train_dataloader:
                 self.optimizer.zero_grad(set_to_none=True)
 
@@ -88,15 +100,39 @@ class TextPredictor:
                 output = self.model(src, tgt)
                 loss = calculate_loss(output, tgt)
 
+                # Calculate metrics
+
+                metrics = self.metrics(output, tgt)
+
                 loss.backward()
                 self.optimizer.step()
+
+                for k, v in metrics.items():
+                    total_metrics[k] = total_metrics.get(k, 0) + v
                 total_loss += loss.item()
             train_loss = total_loss / len(train_dataloader)
-            val_loss = self.evaluate(val_dataloader)
-            print(f"Epoch: {i+1}, Train loss: {train_loss}, Val loss: {val_loss}")
+
+            for k, v in total_metrics.items():
+                total_metrics[k] = v / len(train_dataloader)
+            val_loss, val_metrics = self.evaluate(val_dataloader)
+            print(f"Epoch {i + 1}/{epochs} | train_loss: {train_loss:.4f} | val_loss: {val_loss:.4f} | "
+                  f"train_perplexity: {total_metrics['perplexity']:.4f} | val_perplexity: {val_metrics['perplexity']:.4f}"
+                  f" | train_bleu: {total_metrics['bleu']:.4f} | val_bleu: {val_metrics['bleu']:.4f}"
+                  f" | train_accuracy: {total_metrics['accuracy']:.4f} | val_accuracy: {val_metrics['accuracy']:.4f}"
+                  f" | train_recall: {total_metrics['recall']:.4f} | val_recall: {val_metrics['recall']:.4f}"
+                  f" | train_precision: {total_metrics['precision']:.4f} | val_precision: {val_metrics['precision']:.4f}"
+                  f" | train_f1: {total_metrics['f1']:.4f} | val_f1: {val_metrics['f1']:.4f}")
+
             if use_wandb:
                 import wandb
-                wandb.log({"train_loss": train_loss, "val_loss": val_loss})
+                wandb.log(
+                    {"train_loss": train_loss, "val_loss": val_loss, "train_perplexity": total_metrics["perplexity"],
+                     "val_perplexity": val_metrics["perplexity"], "train_bleu": total_metrics["bleu"],
+                     "val_bleu": val_metrics["bleu"], "train_accuracy": total_metrics["accuracy"],
+                     "val_accuracy": val_metrics["accuracy"], "train_recall": total_metrics["recall"],
+                     "val_recall": val_metrics["recall"], "train_precision": total_metrics["precision"],
+                     "val_precision": val_metrics["precision"], "train_f1": total_metrics["f1"],
+                     "val_f1": val_metrics["f1"], "epoch": i + 1})
 
     def generate(self, context, max_len=100, max_seq_len=32):
         """Generate text given context
@@ -109,3 +145,22 @@ class TextPredictor:
         output = self.model.generate(context, max_len, max_seq_len)
         output = output[0].cpu().numpy().tolist()
         return self.tokenizer.decode(output)
+
+    @torch.no_grad()
+    def metrics(self, output, targets):
+        """Calculate metrics
+        :param output: torch.Tensor
+        :param targets: torch.Tensor
+        :return: dict"""
+
+        preds = torch.argmax(output, dim=-1)
+        targets = targets
+        target_sentence = [self.tokenizer.decode(target) for target in targets]
+        pred_sentence = [self.tokenizer.decode(pred) for pred in preds]
+
+        return {"accuracy": accuracy(preds, targets, task="multiclass", num_classes=self.tokenizer.vocab_size),
+                "f1": f1_score(preds, targets, task="multiclass", num_classes=self.tokenizer.vocab_size),
+                "precision": precision(preds, targets, task="multiclass", num_classes=self.tokenizer.vocab_size),
+                "recall": recall(preds, targets, task="multiclass", num_classes=self.tokenizer.vocab_size),
+                "perplexity": perplexity(output, targets),
+                "bleu": bleu_score(pred_sentence, target_sentence)}

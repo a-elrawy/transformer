@@ -3,3 +3,5 @@ transformers~=4.28.1
 wandb~=0.15.2
 numpy~=1.24.3
 librosa~=0.10.0.post2
+pesq~=0.0.4
+torchmetrics~=0.11.4

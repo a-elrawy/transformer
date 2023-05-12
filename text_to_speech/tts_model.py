@@ -1,6 +1,7 @@
-import librosa
 import torch
 from torch import nn
+
+from torchmetrics.functional.audio import perceptual_evaluation_speech_quality
 
 from model import Transformer
 from utils.audio_preprocessing import spectrogram_to_audio
@@ -65,19 +66,21 @@ class TextToSpeech:
         self.mse_loss = nn.MSELoss()
 
     def evaluate(self, dataloader):
-        total_loss = 0
+        total_loss, total_pesq = 0, 0
         with torch.no_grad():
             for text, spec in dataloader:
                 text = text.to(self.device)
                 spec = spec.to(self.device)
                 output = self.model(text, spec)
                 loss = self.mse_loss(output, spec)
+                pesq = self.metrics(output, spec)
+                total_pesq += pesq
                 total_loss += loss.item()
-        return total_loss / len(dataloader)
+        return total_loss / len(dataloader), total_pesq / len(dataloader)
 
     def train(self, train_dataloader, val_dataloader, epochs=10, use_wandb=False):
         for i in range(epochs):
-            total_loss = 0
+            total_loss, total_pesq = 0, 0
             for text, spec in train_dataloader:
                 self.optimizer.zero_grad()
                 text = text.to(self.device)
@@ -87,20 +90,23 @@ class TextToSpeech:
 
                 # Compute the loss
                 loss = self.mse_loss(generated_spec, spec)
+                pesq = self.metrics(generated_spec, spec).mean()
 
                 # Backpropagate the gradients
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
-                print(loss.item())
-                if loss.item() < 0.2:
-                    break
+                total_pesq += pesq.item()
+
             train_loss = total_loss / len(train_dataloader)
-            val_loss = self.evaluate(val_dataloader)
-            print(f"Epoch: {i + 1}, Train loss: {train_loss}, Val loss: {val_loss}")
+            train_pesq = total_pesq / len(train_dataloader)
+            val_loss, val_pesq = self.evaluate(val_dataloader)
             if use_wandb:
                 import wandb
-                wandb.log({"train_loss": train_loss, "val_loss": val_loss})
+                wandb.log({"train_loss": train_loss, "train_pesq": train_pesq,
+                           "val_loss": val_loss, "val_pesq": val_pesq})
+            print(f"Epoch {i + 1}: train_loss: {train_loss}, train_pesq: {train_pesq}, "
+                  f"val_loss: {val_loss}, val_pesq: {val_pesq}")
 
     def generate(self, text, sr=22050, max_len=1000):
         """Generate audio from text
@@ -125,3 +131,18 @@ class TextToSpeech:
         audio_pred = spec.squeeze().detach().cpu().numpy()
         audio_pred = spectrogram_to_audio(audio_pred, sr)
         return audio_pred
+
+    @torch.no_grad()
+    def metrics(self, outputs, targets):
+        """Compute metrics for evaluation
+        :param outputs: predicted spectrogram
+        :param targets: target spectrogram
+        :return: metrics"""
+
+        outputs = outputs.detach().cpu().numpy()
+        targets = targets.detach().cpu().numpy()
+        audio_pred = spectrogram_to_audio(outputs, 16000)
+        audio_target = spectrogram_to_audio(targets, 16000)
+        audio_pred_tensor = torch.from_numpy(audio_pred)
+        audio_target_tensor = torch.from_numpy(audio_target)
+        return perceptual_evaluation_speech_quality(audio_pred_tensor, audio_target_tensor, 16000, 'wb')

@@ -6,6 +6,10 @@ This project includes two modules for text prediction and text-to-speech using t
 - [PyTorch](https://pytorch.org/) 2.0.0
 - [Transformers](https://huggingface.co/transformers/) 4.28.1 
 - [WandB](https://wandb.ai/) 0.15.2
+- [numpy](https://numpy.org/) 1.24.3
+- [Librosa](https://librosa.org/) 0.10.0
+- [torchmetrics](https://torchmetrics.readthedocs.io/en/latest/) 0.11.4
+- pesq 0.0.4
 
 Install the required packages using the following command:
 ```bash
