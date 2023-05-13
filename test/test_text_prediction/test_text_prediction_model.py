@@ -26,7 +26,7 @@ class TestTextPredictor(unittest.TestCase):
     def test_evaluate(self):
         input_data = torch.randint(low=0, high=self.vocab_size, size=(16, 32))
         dataloader = torch.utils.data.DataLoader(input_data, batch_size=16)
-        loss = self.text_predictor.evaluate(dataloader)
+        loss, _ = self.text_predictor.evaluate(dataloader)
         self.assertIsInstance(loss, float)
 
     def test_train(self):
