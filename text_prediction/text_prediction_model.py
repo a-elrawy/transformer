@@ -93,11 +93,25 @@ class TextPredictor:
             total_loss, total_metrics = 0, {}
             for src in train_dataloader:
                 self.optimizer.zero_grad(set_to_none=True)
+                # If using huggingface tokenizer
+                if src.__class__.__name__ == 'dict':
+                    src_ids = src['input_ids'].to(self.device)
+                    src_mask_batch = src['attention_mask'].to(self.device)
 
-                tgt = src[:, 1:].to(self.device)
-                src = src[:, :-1].to(self.device)
+                    tgt = src_ids[:, 1:].to(self.device)
+                    src = src_ids[:, :-1].to(self.device)
+                    src_mask = src_mask_batch[:, :-1].to(self.device)
+                    tgt_mask = src_mask_batch[:, 1:].to(self.device)
+                    # Reshape src_mask and tgt_mask
+                    src_mask = src_mask.reshape(src_mask.shape[0], 1, 1, src_mask.shape[1])
+                    tgt_mask = tgt_mask.reshape(tgt_mask.shape[0], 1, 1, tgt_mask.shape[1])
 
-                output = self.model(src, tgt)
+                    output = self.model(src, tgt, src_mask, tgt_mask)
+                else:
+                    tgt = src[:, 1:].to(self.device)
+                    src = src[:, :-1].to(self.device)
+                    output = self.model(src, tgt)
+
                 loss = calculate_loss(output, tgt)
 
                 # Calculate metrics

@@ -23,7 +23,7 @@ def get_dataloaders(dataset, batch_size=32, collate_fn=None):
     train_dataset, val_dataset = train_test_split(train_dataset)
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
-    val_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
 
     return train_dataloader, val_dataloader, test_dataloader

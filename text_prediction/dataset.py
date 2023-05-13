@@ -1,6 +1,5 @@
 from io import open
 
-import torch
 from torch.utils.data import Dataset
 
 from utils.data_loader import get_dataloaders
@@ -15,18 +14,17 @@ class ShakespearDataset(Dataset):
 
         self.file_path = file_path
         self.data = self._load_data()
+        self.sentences = self.data.split('.')
+        # Remove empty lines
+        self.sentences = [s for s in self.sentences if len(s) > 0]
         self.tokenizer = tokenizer
-
-        # Encode the data into a sequence of tokens
-        self.tokens = self.tokenizer.encode(self.data)
-        # Split the data into chunks of length max_seq_len
-        self.tokens = [self.tokens[i:i + max_seq_len] for i in range(0, len(self.tokens), max_seq_len)]
-        # Remove the last chunk if it is not of length max_seq_len
-        if len(self.tokens[-1]) != max_seq_len:
-            self.tokens = self.tokens[:-1]
+        # Add PAD token to tokenizer if it does not exist
+        if tokenizer is not None and tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        self.max_seq_len = max_seq_len
 
     def __len__(self):
-        return len(self.tokens)
+        return len(self.sentences)
 
     def _load_data(self):
         with open(self.file_path, 'r') as f:
@@ -34,7 +32,11 @@ class ShakespearDataset(Dataset):
         return data
 
     def __getitem__(self, idx):
-        return torch.tensor(self.tokens[idx])
+        tokens = self.tokenizer(self.sentences[idx], return_tensors='pt', max_length=self.max_seq_len,
+                                padding='max_length', truncation=True)
+        # Remove batch dimension
+        tokens = {key: val.squeeze(0) for key, val in tokens.items()}
+        return tokens
 
 
 def get_shakespeare_dataloader(batch_size, max_seq_len=64, tokenizer=None):

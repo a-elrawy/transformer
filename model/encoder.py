@@ -29,7 +29,7 @@ class EncoderLayer(nn.Module):
         :return: tensor of shape (N, S, E)"""
 
         # Self-attention
-        src2 = self.self_attn(src, src, src, mask=src_mask)[0]
+        src2 = self.self_attn(src, src, src, mask=src_mask)
         src = src + self.dropout(src2)
         src = self.norm1(src)
 
